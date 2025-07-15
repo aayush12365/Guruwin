@@ -1,1 +1,1761 @@
-# Guruwin
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GURU WIN</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    /* --- SHARED STYLES --- */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* --- AUTHENTICATION PAGE STYLES --- */
+    #auth-wrapper {
+      background: linear-gradient(160deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      display: flex; /* Initially visible by default */
+      align-items: center;
+      justify-content: center;
+    }
+
+    #auth-container {
+      background: rgba(0,0,0,0.6);
+      padding: 25px 20px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 340px;
+      box-shadow: 0 0 20px #0ff;
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(30px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    #auth-container h2 {
+      text-align: center;
+      margin-bottom: 15px;
+      font-weight: 600;
+      color: #0ff;
+      letter-spacing: 1px;
+    }
+
+    #auth-container .form-group {
+      margin-bottom: 14px;
+    }
+
+    #auth-container input {
+      width: 100%;
+      padding: 11px;
+      background: #111;
+      border: 1px solid #0ff;
+      color: #0ff;
+      border-radius: 7px;
+      font-size: 15px;
+      transition: 0.2s;
+    }
+
+    #auth-container input:focus {
+      outline: none;
+      background: #000;
+      box-shadow: 0 0 6px #0ff;
+    }
+
+    #auth-container input::placeholder {
+      color: #888;
+    }
+
+    #auth-container .btn {
+      background: linear-gradient(135deg, #0ff, #00f9a6);
+      color: #000;
+      padding: 11px;
+      border: none;
+      width: 100%;
+      font-weight: bold;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #auth-container .btn:hover {
+      background: linear-gradient(135deg, #00f9a6, #0ff);
+    }
+
+    #auth-container .error {
+      text-align: center;
+      color: #f55;
+      font-size: 13px;
+      margin-bottom: 10px;
+      min-height: 15px;
+    }
+
+    #auth-container .toggle-link {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    #auth-container .toggle-link a {
+      color: #0ff;
+      text-decoration: none;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+
+    /* --- MAIN APP STYLES --- */
+    #app-wrapper {
+        display: none; /* Initially hidden */
+        flex-direction: column;
+        min-height: 100vh;
+        background: #000;
+        color: #fff;
+    }
+
+    /* Header */
+    .header {
+      background: #ff4d4d;
+      padding: 15px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      width: 100%;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+
+    .header-title {
+      flex: 1;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .header-icon {
+      padding-right: 10px;
+      font-size: 20px;
+    }
+
+    /* Tab Container & Content */
+    .tab-container {
+      flex-grow: 1;
+      padding-top: 15px;
+      padding-bottom: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .tab-content {
+      display: none;
+      width: 100%;
+      max-width: 500px;
+      padding: 0 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      background: #1c1c1c;
+      position: sticky;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid #333;
+      z-index: 20;
+    }
+
+    .bottom-nav div {
+      flex: 1;
+      padding: 12px 0;
+      text-align: center;
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .bottom-nav div::before {
+      content: '';
+      font-size: 20px;
+      margin-bottom: 3px;
+    }
+    .bottom-nav div:nth-child(1)::before { content: '🎲'; }
+    .bottom-nav div:nth-child(2)::before { content: '💣'; }
+    .bottom-nav div:nth-child(3)::before { content: '🎁'; }
+    .bottom-nav div:nth-child(4)::before { content: '👤'; }
+
+    .bottom-nav .active {
+      color: #00f7ff;
+      font-weight: bold;
+    }
+
+    /* Profile Card */
+    .profile-card {
+      background: linear-gradient(135deg, #3e3b92, #5a55ae);
+      border-radius: 20px;
+      padding: 25px;
+      text-align: center;
+      margin-bottom: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+
+    .profile-icon {
+      width: 80px; height: 80px;
+      background: #ffd54f;
+      color: #3e2723;
+      font-weight: bold; font-size: 26px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 10px;
+    }
+
+    .profile-name { font-size: 20px; font-weight: 700; margin-top: 5px; }
+    .profile-uid { font-size: 13px; color: #fff; }
+
+    /* Info Box */
+    .info-box {
+      background: linear-gradient(to right, #283e51, #485563);
+      border-radius: 15px;
+      padding: 15px;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      margin-bottom: 15px;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 5px 0;
+    }
+
+    /* Wallet Box (General) */
+    .wallet-box {
+      background: linear-gradient(to right, #f7971e, #ffd200);
+      color: #222;
+      padding: 15px;
+      border-radius: 15px;
+      text-align: center;
+      margin: 20px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    }
+
+    .wallet-box div:first-child { font-size: 14px; font-weight: 500; }
+    .wallet-box div:last-child { font-size: 26px; font-weight: bold; margin-top: 5px; }
+
+    /* Bonus Section */
+    .bonus-section {
+      background: linear-gradient(to right, #f83600, #f9d423);
+      padding: 14px;
+      border-radius: 18px;
+      margin-bottom: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+      text-align: center;
+      cursor: pointer;
+      font-size: 17px;
+      font-weight: bold;
+      color: #222;
+    }
+
+    /* Option Box */
+    .option-box {
+      background: linear-gradient(135deg, #232526, #414345);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      margin-bottom: 20px; /* Added margin for spacing with logout button */
+    }
+
+    .option-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+
+    .option-button {
+      background: linear-gradient(135deg, #ff5f6d, #ffc371);
+      padding: 15px;
+      border-radius: 15px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      color: #222;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    .option-button:nth-child(2) {
+      background: linear-gradient(135deg, #36d1dc, #5b86e5);
+      color: white;
+    }
+    .option-button:nth-child(3) {
+      background: linear-gradient(135deg, #c94b4b, #4b134f);
+      color: white;
+    }
+    .option-button:nth-child(4) {
+      background: linear-gradient(135deg, #373b44, #4286f4);
+      color: white;
+    }
+
+    .option-button-support {
+      background: linear-gradient(135deg, #00c9ff, #92fe9d);
+      color: #222;
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 15px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    
+    /* NEW: Logout Button Styles */
+    .logout-button-container {
+      text-align: center;
+      margin-top: 15px; /* Spacing from the box above */
+    }
+
+    .logout-btn {
+      background: linear-gradient(135deg, #e53935, #b71c1c);
+      color: white;
+      padding: 8px 35px; /* Smaller padding */
+      border: none;
+      font-family: 'Segoe UI', sans-serif;
+      border-radius: 20px; /* Rounded corners */
+      font-weight: bold;
+      font-size: 14px; /* Smaller font */
+      cursor: pointer;
+      transition: opacity 0.3s;
+    }
+
+    .logout-btn:hover {
+      opacity: 0.9;
+    }
+
+    /* General Popups (Success/Error) */
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px 30px;
+      border-radius: 20px;
+      z-index: 1000;
+      display: none;
+      text-align: center;
+      color: #fff;
+    }
+
+    .popup.success {
+      background: #1a3325;
+      border: 2px solid #00ff88;
+      box-shadow: 0 0 10px #00ff88;
+    }
+
+    .popup.error {
+      background: #330000;
+      border: 2px solid #ff4d4d;
+      box-shadow: 0 0 12px #ff4d4d;
+    }
+
+    .popup h3 { margin-bottom: 8px; }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 9999;
+      color: #00f7ff;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .loading-spinner {
+      border: 4px solid rgba(0, 247, 255, 0.3);
+      border-top: 4px solid #00f7ff;
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Overlay Pages */
+    .overlay-page {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #1f1c2c, #928dab);
+      z-index: 99;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .overlay-container {
+      background: #121212;
+      border: 2px solid #00f7ff;
+      border-radius: 20px;
+      padding: 20px;
+      width: 90%;
+      max-width: 340px;
+      box-shadow: 0 0 10px #00f7ff;
+      text-align: center;
+      position: relative;
+    }
+
+    .overlay-container h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 22px;
+      color: #00f7ff;
+      font-weight: bold;
+    }
+
+    .form-overlay .download-text { color: #ffd700; margin: 8px 0; font-size: 14px; }
+    .form-overlay .qr-img { width: 220px; max-width: 100%; height: auto; border-radius: 12px; border: 2px solid #00f7ff; cursor: pointer; }
+    .form-overlay .upi { margin: 10px 0 2px; font-weight: bold; color: #ccc; }
+    .form-overlay .name { font-size: 14px; color: #aaa; }
+    .form-overlay .copy-btn { margin-top: 8px; padding: 6px 12px; background-color: #00f7ff; border: none; color: #000; font-weight: bold; border-radius: 30px; cursor: pointer; }
+    .form-overlay input { width: 90%; padding: 10px; margin-top: 12px; border-radius: 10px; border: none; font-size: 15px; color: #000; }
+    .deposit-container .submit-btn { margin-top: 16px; padding: 10px 20px; border: none; border-radius: 10px; background: linear-gradient(to right, #ff7e5f, #feb47b); color: #fff; font-weight: bold; cursor: pointer; }
+    .withdraw-container .submit-btn { margin-top: 16px; padding: 10px 20px; border: none; border-radius: 10px; background: linear-gradient(to right, #00f7ff, #007bff); color: #fff; font-weight: bold; cursor: pointer; }
+    .withdraw-container .field-label { font-size: 14px; margin-top: 10px; text-align: left; color: #ccc; }
+
+    .overlay-back-button {
+        position: absolute;
+        top: 15px; left: 15px;
+        background: #00f7ff;
+        color: #121212;
+        padding: 8px 12px;
+        border-radius: 50%;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    /* History Styles */
+    .history-overlay .overlay-container { max-width: 420px; padding-top: 50px; padding-bottom: 20px; }
+    .history-overlay .total-box { background: #121212; border: 2px solid #00f7ff; border-radius: 12px; padding: 6px 12px; text-align: center; max-width: 260px; margin: 0 auto 16px auto; font-size: 15px; font-weight: bold; color: #00f7ff; box-shadow: 0 0 8px #00f7ff; }
+    .history-overlay .history-list { max-width: 100%; margin: auto; }
+    .history-overlay .history-card { background: #181818; border-left: 5px solid #00f7ff; border-radius: 12px; margin-bottom: 12px; padding: 10px 14px; box-shadow: 0 2px 8px rgba(0, 255, 255, 0.15); }
+    .history-overlay .info-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
+    .history-overlay .label { font-size: 13px; color: #90e0ef; font-weight: 500; }
+    .history-overlay .value { font-size: 13px; color: #f1f1f1; font-weight: 500; word-break: break-word; text-align: right; }
+    .history-overlay .amount-box { background: linear-gradient(to right, #00f7ff, #0099ff); color: #000; font-weight: bold; padding: 3px 10px; border-radius: 30px; font-size: 13px; }
+    .history-overlay .status { font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 30px; color: #fff; }
+    .history-overlay .success { background: #2ecc71; }
+    .history-overlay .pending { background: #f39c12; }
+    .history-overlay .rejected { background: #e74c3c; }
+    .history-overlay .no-history { text-align: center; margin-top: 40px; color: #ccc; font-style: italic; }
+
+    /* Support Styles */
+    .support-overlay .overlay-container { max-width: 380px; padding-top: 50px; }
+    .support-overlay .info { margin-bottom: 15px; }
+    .support-overlay .info label { display: block; font-size: 14px; font-weight: 600; color: #90e0ef; margin-bottom: 6px; text-align: left; }
+    .support-overlay .info input, .support-overlay .info textarea { width: 100%; padding: 10px; border-radius: 10px; border: none; font-size: 14px; background: #2b2b2b; color: #fff; resize: none; }
+    .support-overlay .submit-btn { width: 100%; padding: 10px; background: linear-gradient(to right, #ff7e5f, #feb47b); color: #fff; font-weight: bold; font-size: 15px; border: none; border-radius: 10px; cursor: pointer; margin-top: 12px; }
+
+    /* --- LOTTERY GAME STYLES --- */
+    .lottery-game-container { background-color: #e3f6ff; color: #000; padding: 15px; border-radius: 10px; max-width: 450px; margin: 15px auto; text-align: center; box-shadow: 0 0 10px rgba(0,0,0,0.2); }
+    .lottery-game-container .wallet { background: white; padding: 10px; border-radius: 10px; margin: 10px auto; display: block; width: fit-content; }
+    .lottery-game-container .wallet button { padding: 10px 40px; margin: 10px; border: none; border-radius: 40px; font-weight: bold; font-size: 14px; }
+    .lottery-game-container .withdraw { background: orange; color: black; }
+    .lottery-game-container .deposit { background: purple; color: white; }
+    .lottery-game-container .result-box { background-color: #f9b7b7; padding: 10px; border-radius: 40px; width: fit-content; margin: auto; margin-bottom: 10px; }
+    .lottery-game-container .result-ball { width: 60px; height: 60px; border-radius: 50%; font-weight: bold; font-size: 24px; line-height: 60px; display: inline-block; margin: 5px auto; box-shadow: 0 0 10px rgba(0,0,0,0.2); transition: background 0.3s; }
+    .lottery-game-container .result-ball.red { background-color: red; color: white !important; }
+    .lottery-game-container .result-ball.green { background-color: green; color: white !important; }
+    .lottery-game-container .number-buttons div { display: inline-block; width: 45px; height: 45px; line-height: 45px; border-radius: 50%; margin: 5px; font-weight: bold; color: white; font-size: 20px; cursor: pointer; }
+    .lottery-game-container .bet-box { background-color: #ffffff; border-radius: 15px; padding: 10px; margin: 10px 0; }
+    .lottery-game-container .bet-button { padding: 10px 25px; margin: 8px 5px; font-size: 15px; font-weight: bold; color: white; border: none; border-radius: 50px; cursor: pointer; }
+    .lottery-game-container .Red-btn { background: red; }
+    .lottery-game-container .green-btn { background: green; }
+    .lottery-game-container .big-btn { background: orange; }
+    .lottery-game-container .small-btn { background: blue; }
+    #lottery-bet-popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: #333; padding: 20px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 1001; text-align: center; width: 90%; max-width: 300px; }
+    #lottery-bet-popup-title { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+    #lottery-bet-popup .input-wrapper { position: relative; margin-bottom: 20px; }
+    #lottery-bet-popup .input-wrapper span { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-weight: bold; color: #888; }
+    #lottery-bet-popup input { width: 100%; padding: 12px 12px 12px 35px; font-size: 16px; border-radius: 10px; border: 1px solid #ccc; text-align: center; }
+    #lottery-bet-popup .popup-buttons { display: flex; gap: 10px; }
+    #lottery-bet-popup .popup-btn { flex: 1; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 10px; border: none; cursor: pointer; color: white; }
+    #lottery-bet-popup .popup-btn.green { background-color: #4CAF50; }
+    #lottery-bet-popup .popup-btn.red { background-color: #f44336; }
+    .lottery-game-container #success-msg { position: fixed; bottom: 20%; left: 50%; transform: translateX(-50%); background: #111; color: #00ff9f; padding: 12px 30px; border-radius: 15px; font-weight: bold; z-index: 1000; display: none; font-size: 18px; border: 2px solid white; }
+    .lottery-game-container .tab-switch { display: flex; justify-content: center; margin: 10px 0; gap: 10px; }
+    .lottery-game-container .tab-btn { padding: 8px 15px; border-radius: 15px; border: none; font-weight: bold; font-size: 14px; cursor: pointer; }
+    .lottery-game-container .active-tab { background: #f44336; color: white; }
+    .lottery-game-container .inactive-tab { background: #eeeeee; color: black; }
+    .lottery-game-container table { width: 100%; margin: 10px auto; border-collapse: collapse; margin-bottom: 10px; }
+    .lottery-game-container th, .lottery-game-container td { padding: 8px; border: 1px solid #999; font-size: 13px; }
+    .lottery-game-container th { background-color: #ff7676; color: white; }
+    .lottery-game-container .green { color: green; font-weight: bold; }
+    .lottery-game-container .red { color: red; font-weight: bold; }
+    .lottery-game-container #game-pagination, .lottery-game-container #mybet-pagination { margin: 10px auto; font-weight: bold; display: flex; justify-content:center; align-items:center; gap: 20px; color: #000; }
+    .lottery-game-container #mybet-pagination { display: none; }
+    .lottery-countdown-overlay { position: fixed; background: rgba(0, 0, 0, 0.85); display: none; justify-content: center; align-items: center; z-index: 9998; transition: opacity 0.2s; pointer-events: none; color: #ffc107; text-shadow: 0 0 25px rgba(255, 193, 7, 0.8); font-weight: bold; font-size: 80px; }
+    .lottery-result-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 350px; z-index: 9999; display: none; color: #000; }
+    .lottery-result-popup .popup-content { border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; position: relative; }
+    .lottery-result-popup.win .popup-content { background: linear-gradient(180deg, #ff9800, #ff5722); color: white; }
+    .lottery-result-popup.loss .popup-content { background: linear-gradient(180deg, #81d4fa, #4fc3f7); color: #333; }
+    @keyframes congrats-animation { from { opacity: 0; transform: scale(0.7) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .lottery-result-popup .popup-header { font-size: 28px; font-weight: bold; margin-bottom: 20px; }
+    .lottery-result-popup.win .popup-header { animation: congrats-animation 0.6s ease-out; }
+    .lottery-result-popup .result-details { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 20px; font-size: 14px; }
+    .lottery-result-popup .result-tag { padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+    .lottery-result-popup .result-tag.color { background: #fff; }
+    .lottery-result-popup .result-tag.color.green { color: #4CAF50; }
+    .lottery-result-popup .result-tag.color.red { color: #f44336; }
+    .lottery-result-popup .result-tag.number { background: white; color: #000; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+    .lottery-result-popup .result-tag.size { background: white; color: #000; }
+    .lottery-result-popup .bonus-ticket, .lottery-result-popup .loss-ticket { background: white; color: #333; border-radius: 10px; padding: 20px; position: relative; }
+    .lottery-result-popup .bonus-ticket::before, .lottery-result-popup .bonus-ticket::after, .lottery-result-popup .loss-ticket::before, .lottery-result-popup .loss-ticket::after { content: ''; position: absolute; top: 50%; width: 20px; height: 20px; background: #ff5722; border-radius: 50%; transform: translateY(-50%); }
+    .lottery-result-popup.loss .bonus-ticket::before, .lottery-result-popup.loss .bonus-ticket::after { background: #4fc3f7; }
+    .lottery-result-popup .bonus-ticket::before, .lottery-result-popup .loss-ticket::before { left: -10px; }
+    .lottery-result-popup .bonus-ticket::after, .lottery-result-popup .loss-ticket::after { right: -10px; }
+    .lottery-result-popup .bonus-label, .lottery-result-popup .loss-label { font-size: 20px; font-weight: bold; }
+    .lottery-result-popup .bonus-amount { font-size: 36px; font-weight: bold; color: #f44336; margin: 5px 0; }
+    .lottery-result-popup .period-info, .lottery-result-popup .issue-info { font-size: 12px; color: #777; }
+    .lottery-result-popup .auto-close-note { margin-top: 15px; font-size: 13px; color: rgba(255,255,255,0.8); }
+    .lottery-result-popup.loss .auto-close-note { color: #555; }
+    
+    /* --- MINES GAME STYLES --- */
+    .mines-game-container { background: linear-gradient(to right, #2c3e50, #4ca1af); color: white; width: 100%; padding: 0 20px; flex-grow: 1; display: flex; flex-direction: column; align-items: center; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .mines-game-container .mines-content-wrapper { width: 100%; max-width: 420px; margin-top: 15px; margin-bottom: 20px; }
+    .mines-game-container .wallet-box { width: 100%; max-width: 420px; background: white; padding: 12px; text-align: center; color: black; border-radius: 0 0 16px 16px; margin-top: 0; box-shadow: none; }
+    .mines-game-container .wallet-box .amount { font-size: 1.2em; font-weight: bold; }
+    .mines-game-container .wallet-box .label { font-size: 0.9em; color: #444; }
+    .mines-game-container .wallet-buttons { display: flex; justify-content: space-around; margin-top: 10px; }
+    .mines-game-container .wallet-buttons button { padding: 8px 20px; border: none; border-radius: 30px; font-weight: bold; font-size: 0.9em; cursor: pointer; }
+    .mines-game-container .withdraw-btn { background: orange; color: black; }
+    .mines-game-container .deposit-btn { background: purple; color: white; }
+    .mines-game-container .game-container { width: 100%; max-width: 420px; background: #1f1f1f; padding: 20px; margin: 15px 0; border-radius: 16px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.6); }
+    .mines-game-container .input-group { margin-bottom: 12px; }
+    .mines-game-container .input-group label { display: block; margin-bottom: 5px; font-size: 0.9em; }
+    .mines-game-container .input-group input { width: 100%; padding: 10px; font-size: 1em; font-weight: bold; border: none; border-radius: 8px; background: #e0e0e0; color: #000; }
+    .mines-game-container .mines-info { display: flex; justify-content: space-between; background: #111; padding: 10px; border-radius: 10px; margin: 15px 0; font-weight: bold; }
+    .mines-game-container .mines-info .label { font-size: 0.85em; color: #ccc; }
+    .mines-game-container .mines-info .value { font-size: 1.2em; color: #00ff91; }
+    .mines-game-container .mines-grid { display: none; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 20px 0; }
+    .mines-game-container .mines-grid.show { display: grid; }
+    .mines-game-container .mine-tile { aspect-ratio: 1/1; background-color: #333; border-radius: 10px; font-size: 1.6em; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+    .mines-game-container .mine-tile:hover { background-color: #444; }
+    .mines-game-container .mine-tile.revealed { cursor: default; }
+    .mines-game-container .mine-tile.gem { background-color: #28a745; }
+    .mines-game-container .mine-tile.bomb { background-color: #dc3545; animation: shake 0.3s ease-in-out 2; }
+    .mines-game-container .mine-tile.gem::after { content: '💎'; }
+    .mines-game-container .mine-tile.bomb::after { content: '💣'; }
+    @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-4px); } 100% { transform: translateX(0); } }
+    .mines-game-container #mines_action_btn { width: 100%; padding: 15px; font-size: 1.1em; background: linear-gradient(to right, #00c6ff, #0072ff); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+    .mines-game-container #win-popup, .mines-game-container #error-popup, .mines-game-container #loss-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; color: #222; padding: 25px 30px; border-radius: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.5); display: none; z-index: 9999; text-align: center; }
+    .mines-game-container #win-popup.show, .mines-game-container #error-popup.show, .mines-game-container #loss-popup.show { display: block; animation: fadeIn 0.3s ease; }
+    .mines-game-container #win-popup h2, .mines-game-container #error-popup h2, .mines-game-container #loss-popup h2 { font-size: 20px; margin-bottom: 10px; }
+    .mines-game-container #win-popup span { font-weight: bold; color: #2e7d32; }
+    .mines-game-container #win-popup button, .mines-game-container #error-popup button, .mines-game-container #loss-popup button { margin-top: 15px; padding: 8px 20px; background: #007bff; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; }
+    .mines-game-container #error-popup h2 { color: #d32f2f; }
+    .mines-game-container #loss-popup h2 { color: #e53935; }
+
+    /* --- PROMOTION TAB STYLES --- */
+    #promotion { background: linear-gradient(to bottom right, #ffe0e9, #e0f7ff, #e6ffe6); padding: 20px; color: #333; max-width: none; }
+    #promotion .container { max-width: 420px; margin: 0 auto; }
+    #promotion .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 20px; border: 3px solid #ff80ab; }
+    #promotion h2, #promotion h3 { text-align: center; margin-bottom: 15px; }
+    #promotion h2 { color: #d50000; }
+    #promotion h3 { color: #6a1b9a; }
+    #promotion .refer-box { background: linear-gradient(to right, #fff3e0, #e3f2fd); padding: 15px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+    #promotion .refer-box p { font-size: 14px; margin-bottom: 10px; }
+    #promotion .refer-link { font-weight: bold; color: #007bff; word-break: break-all; }
+    #promotion .btns { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    #promotion .btn { padding: 10px 15px; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; color: white; background: linear-gradient(to right, #ff6a00, #ee0979); transition: 0.3s; }
+    #promotion .btn:hover { opacity: 0.9; }
+    #promotion .stat-card { background: #fefefe; border: 1px solid #ddd; border-radius: 15px; padding: 15px; }
+    #promotion .stat-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; color: #444; }
+    #promotion .stat-row strong { color: #000; }
+    #promotion .my-invites { background: linear-gradient(to right, #f3e5f5, #e0f2f1); padding: 15px; border-radius: 15px; border: 2px solid #ab47bc; }
+    #promotion .invite-table { width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 10px; }
+    #promotion .invite-table th, #promotion .invite-table td { padding: 8px; text-align: center; border-bottom: 1px solid #ccc; }
+    #promotion .invite-table th { background: #ce93d8; color: white; border-radius: 5px; }
+    #promotion .invite-table td { background: #ffffffcc; }
+    #promotion .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+    #promotion .pagination button { background: #ab47bc; color: white; border: none; padding: 6px 12px; border-radius: 10px; cursor: pointer; }
+    #promotion .pagination button:disabled { background: #ccc; cursor: default; }
+    #promotion .footer-note { text-align: center; font-size: 13px; margin-top: 15px; color: #666; }
+  </style>
+</head>
+<body>
+
+<!-- AUTHENTICATION WRAPPER -->
+<div id="auth-wrapper">
+  <div id="auth-container">
+    <h2 id="formTitle">Sign Up</h2>
+
+    <!-- Sign Up Form -->
+    <div id="signUpForm">
+      <div class="form-group">
+        <input type="tel" id="regMobile" placeholder="Mobile Number" maxlength="10">
+      </div>
+      <div class="form-group">
+        <input type="password" id="regPassword" placeholder="New Password">
+      </div>
+      <div class="form-group">
+        <input type="password" id="regConfirm" placeholder="Confirm Password">
+      </div>
+      <div class="form-group">
+        <input type="text" id="regRefer" placeholder="Refer Code (optional)">
+      </div>
+      <div class="error" id="registerError"></div>
+      <button class="btn" onclick="handleRegister()">Sign Up</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm" style="display: none;">
+      <div class="form-group">
+        <input type="tel" id="loginMobile" placeholder="Mobile Number" maxlength="10">
+      </div>
+      <div class="form-group">
+        <input type="password" id="loginPassword" placeholder="Password">
+      </div>
+      <div class="error" id="loginError"></div>
+      <button class="btn" onclick="handleLogin()">Login</button>
+    </div>
+
+    <!-- Toggle Link -->
+    <div class="toggle-link" id="toggleLink">
+      Already have an account? <a href="#" onclick="toggleForm()">Login</a>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP WRAPPER -->
+<div id="app-wrapper">
+  <div class="header">
+    <div class="header-title">GURU WIN</div>
+    <div class="header-icon" onclick="showOverlay('customerSupport')">📞</div>
+  </div>
+
+  <div class="tab-container">
+    <div class="tab-content" id="lottery">
+      <div class="lottery-game-container">
+        <div class="wallet">
+          <div>₹<span id="lotteryBalance">0.00</span><br>wallet balance</div>
+          <button class="withdraw" onclick="showOverlayWithLoading('withdraw')">Withdraw</button>
+          <button class="deposit" onclick="showOverlayWithLoading('deposit')">Deposit</button>
+        </div>
+
+        <div class="result-box">
+          <div style="font-weight:bold;">Last Result</div>
+          <div id="last-result-ball" class="result-ball green">?</div>
+          <div style="font-weight: bold;">Time Left: <span id="time">30</span>s</div>
+          <div style="font-weight: bold;">Period: <span id="period"></span></div>
+        </div>
+
+        <div class="number-buttons">
+          <div style="background:red" onclick="placeLotteryBet('0')">0</div>
+          <div style="background:green" onclick="placeLotteryBet('1')">1</div>
+          <div style="background:red" onclick="placeLotteryBet('2')">2</div>
+          <div style="background:green" onclick="placeLotteryBet('3')">3</div>
+          <div style="background:red" onclick="placeLotteryBet('4')">4</div>
+          <div style="background:green" onclick="placeLotteryBet('5')">5</div>
+        </div>
+
+        <div class="bet-box">
+          <button class="bet-button Red-btn" onclick="placeLotteryBet('Red')">Red</button>
+          <button class="bet-button green-btn" onclick="placeLotteryBet('Green')">Green</button><br>
+          <button class="bet-button small-btn" onclick="placeLotteryBet('Small')">Small (0,1,2)</button>
+          <button class="bet-button big-btn" onclick="placeLotteryBet('Big')">Big (3,4,5)</button>
+        </div>
+
+        <div class="tab-switch">
+          <button id="tab-game" class="tab-btn active-tab" onclick="switchLotteryTab('game')">Game Record</button>
+          <button id="tab-mybet" class="tab-btn inactive-tab" onclick="switchLotteryTab('mybet')">My Game Record</button>
+        </div>
+
+        <table id="game-record-table">
+          <thead><tr><th>Period</th><th>Number</th><th>Size</th><th>Color</th></tr></thead>
+          <tbody id="record-body"></tbody>
+        </table>
+
+        <div id="game-pagination" style="margin: 10px; font-weight:bold; display: flex; justify-content:center; align-items:center; gap: 20px;">
+          <span onclick="prevLotteryPage('game')">◀</span>
+          <span id="game-page">1/1</span>
+          <span onclick="nextLotteryPage('game')">▶</span>
+        </div>
+
+        <table id="mybet-table" style="display:none">
+          <thead><tr><th>Period</th><th>Bet</th><th>Amount</th><th>Result</th></tr></thead>
+          <tbody id="mybet-body"></tbody>
+        </table>
+
+        <div id="mybet-pagination" style="margin: 10px; font-weight:bold; display: none; justify-content:center; align-items:center; gap: 20px;">
+          <span onclick="prevLotteryPage('mybet')">◀</span>
+          <span id="mybet-page">1/1</span>
+          <span onclick="nextLotteryPage('mybet')">▶</span>
+        </div>
+      </div>
+      
+      <div id="lottery-bet-popup">
+        <h3 id="lottery-bet-popup-title">🎯 Enter Bet Amount</h3>
+        <div class="input-wrapper">
+          <span>₹</span>
+          <input type="number" id="lottery-bet-amount" placeholder="Amount">
+        </div>
+        <div class="popup-buttons">
+          <button onclick="confirmLotteryBet()" class="popup-btn green">Place</button>
+          <button onclick="cancelLotteryBet()" class="popup-btn red">Cancel</button>
+        </div>
+      </div>
+
+      <div id="lottery-success-msg" style="display:none;" class="popup success">✅ Bet Successful</div>
+    </div>
+
+    <div class="tab-content" id="mine">
+      <div class="mines-game-container">
+        <div class="mines-content-wrapper">
+          <div class="wallet-box">
+            <div class="amount">₹<span id="minesWallet">0.00</span></div>
+            <div class="label">wallet balance</div>
+            <div class="wallet-buttons">
+              <button class="withdraw-btn" onclick="showOverlayWithLoading('withdraw')">Withdraw</button>
+              <button class="deposit-btn" onclick="showOverlayWithLoading('deposit')">Deposit</button>
+            </div>
+          </div>
+
+          <div class="game-container">
+            <div class="input-group">
+              <label for="minesBetAmount">💰 Bet Amount</label>
+              <input type="number" id="minesBetAmount" value="10" />
+            </div>
+            <div class="input-group">
+              <label for="mineCount">💣 Number of Mines (1–24)</label>
+              <input type="number" id="mineCount" value="3" min="1" max="24" />
+            </div>
+            <div class="mines-info">
+              <div><div class="label">Next Payout</div><div class="value" id="nextProfit">--</div></div>
+              <div><div class="label">Multiplier</div><div class="value" id="xMultiplier">--</div></div>
+            </div>
+            <div class="mines-grid" id="minesGrid"></div>
+            <button id="mines_action_btn" onclick="minesActionBtn.onclick(event)">Start Game</button>
+          </div>
+        </div>
+
+        <div id="mines-win-popup" class="popup success">
+          <h2>🎉 Congratulations King!</h2>
+          <div>You won <span id="mines-win-amount">₹0.00</span></div>
+          <button onclick="document.getElementById('mines-win-popup').style.display='none'; document.getElementById('minesGrid').classList.remove('show');">OK</button>
+        </div>
+
+        <div id="mines-error-popup" class="popup error">
+          <h2>⚠️ Insufficient Balance!</h2>
+          <div>Please enter a valid bet amount.</div>
+          <button onclick="document.getElementById('mines-error-popup').style.display='none'">OK</button>
+        </div>
+
+        <div id="mines-loss-popup" class="popup error">
+          <h2>💥 You Lost!</h2>
+          <div>Better luck next time!</div>
+          <button onclick="document.getElementById('mines-loss-popup').style.display='none'; document.getElementById('minesGrid').classList.remove('show');">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="promotion">
+      <div class="container">
+        <!-- Refer & Earn Card -->
+        <div class="card">
+          <h2>🎁 Refer & Earn</h2>
+          <div class="refer-box">
+            <p>Invite friends and earn commission on their deposits!</p>
+            <p class="refer-link" id="referLink">https://guruwin.com/ref/123456</p>
+            <div class="btns">
+              <button class="btn" onclick="copyLink()">Copy</button>
+              <button class="btn" onclick="shareLink()">Share</button>
+            </div>
+          </div>
+      
+          <div class="stat-card">
+            <div class="stat-row"><span>Total Commission:</span> <strong>₹0.00</strong></div>
+            <div class="stat-row"><span>This Week:</span> <strong>₹0.00</strong></div>
+            <div class="stat-row"><span>Direct Subordinates:</span> <strong>0</strong></div>
+            <div class="stat-row"><span>Total Subordinates:</span> <strong>0</strong></div>
+            <div class="stat-row"><span>Level 1 Deposit Count:</span> <strong>0</strong></div>
+            <div class="stat-row"><span>Level 1 Deposit Amount:</span> <strong>₹0</strong></div>
+            <div class="stat-row"><span>Team Deposit Count:</span> <strong>0</strong></div>
+            <div class="stat-row"><span>Team Deposit Amount:</span> <strong>₹0</strong></div>
+          </div>
+        </div>
+      
+        <!-- My Invites Card -->
+        <div class="card my-invites">
+          <h3>📋 My Invites</h3>
+          <table class="invite-table" id="inviteTable">
+            <thead>
+              <tr>
+                <th>UID</th>
+                <th>Mobile</th>
+                <th>Deposit</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="inviteBody">
+              <!-- No data yet -->
+            </tbody>
+          </table>
+      
+          <div class="pagination">
+            <button onclick="prevPage()" id="prevBtn">Prev</button>
+            <button onclick="nextPage()" id="nextBtn">Next</button>
+          </div>
+        </div>
+      
+        <p class="footer-note">Only 5 recent invited users are shown per page.</p>
+      </div>
+    </div>
+
+    <div class="tab-content active" id="profile">
+      <div class="profile-card">
+        <div class="profile-icon">AA</div>
+        <div class="profile-name">aayushrajput709</div>
+        <div class="profile-uid">UID: 12345678</div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-row"><strong>📱 Mobile:</strong> <span id="profileMobile"></span></div>
+        <div class="info-row"><strong>🕒 Last Login:</strong> <span id="lastLogin">--</span></div>
+      </div>
+
+      <div class="wallet-box">
+        <div>💼 Wallet Balance</div>
+        <div>₹<span id="profileWalletBalance">0.00</span></div>
+      </div>
+
+      <div class="bonus-section" onclick="claimBonus()">
+        🎁 Daily Lucky Bonus – Tap to Claim!
+      </div>
+
+      <div class="option-box">
+        <div class="option-buttons">
+          <div class="option-button" onclick="showOverlayWithLoading('deposit')">Deposit</div>
+          <div class="option-button" onclick="showOverlayWithLoading('withdraw')">Withdrawal</div>
+          <div class="option-button" onclick="showOverlayWithLoading('depositHistory')">Deposit History</div>
+          <div class="option-button" onclick="showOverlayWithLoading('withdrawalHistory')">Withdrawal History</div>
+        </div>
+        <div class="option-button-support" onclick="showOverlay('customerSupport')">Customer Support</div>
+      </div>
+
+      <!-- LOGOUT BUTTON MOVED AND RESTYLED -->
+      <div class="logout-button-container">
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <div onclick="switchTab('lottery')">Lottery</div>
+    <div onclick="switchTab('mine')">Mine</div>
+    <div onclick="switchTab('promotion')">Promotion</div>
+    <div class="active" onclick="switchTab('profile')">Profile</div>
+  </div>
+    
+  <!-- SOUNDS -->
+  <audio id="clickSound" src="https://assets.mixkit.co/sfx/download/mixkit-select-click-1109.wav" preload="auto"></audio>
+  <audio id="tickSound" src="https://assets.mixkit.co/sfx/download/mixkit-tick-tock-clock-timer-1045.wav" preload="auto"></audio>
+  <audio id="gemSound" src="https://assets.mixkit.co/sfx/download/mixkit-video-game-treasure-2066.wav" preload="auto"></audio>
+  <audio id="bombSound" src="https://assets.mixkit.co/sfx/download/mixkit-bomb-explosion-in-battle-2800.wav" preload="auto"></audio>
+  <audio id="winSound" src="https://assets.mixkit.co/sfx/download/mixkit-game-bonus-reached-2065.mp3" preload="auto"></audio>
+  
+  <div class="popup" id="mainPopup">
+    <h3 id="mainPopup-title">✅ Message</h3>
+    <p id="mainPopup-msg">Default message</p>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    Loading...
+  </div>
+    
+  <!-- LOTTERY POPUPS -->
+  <div id="lottery-countdown-overlay" class="lottery-countdown-overlay">05</div>
+  <div id="lottery-win-popup" class="lottery-result-popup win">
+    <div class="popup-content">
+      <div class="popup-header">Congratulations</div>
+      <div class="result-details">
+        <span>Lottery results</span>
+        <span class="result-tag color" id="win-popup-color">Green</span>
+        <span class="result-tag number" id="win-popup-number">1</span>
+        <span class="result-tag size" id="win-popup-size">Small</span>
+      </div>
+      <div class="bonus-ticket">
+        <div class="bonus-label">Bonus</div>
+        <div class="bonus-amount" id="win-popup-amount">₹588.00</div>
+        <div class="period-info" id="win-popup-period">Period: Win 1 minute 20241119100010874</div>
+      </div>
+      <div class="auto-close-note">3 seconds auto close</div>
+    </div>
+  </div>
+  <div id="lottery-loss-popup" class="lottery-result-popup loss">
+    <div class="popup-content">
+      <div class="popup-header">Unfortunately</div>
+      <div class="result-details">
+        <span>Lottery results</span>
+        <span class="result-tag color" id="loss-popup-color">Red</span>
+        <span class="result-tag number" id="loss-popup-number">0</span>
+        <span class="result-tag size" id="loss-popup-size">Small</span>
+      </div>
+      <div class="loss-ticket">
+        <div class="loss-label">Didn't win</div>
+        <div class="issue-info" id="loss-popup-period">Issue: 30s 20250714302027</div>
+      </div>
+      <div class="auto-close-note">3 seconds auto close</div>
+    </div>
+  </div>
+
+  <!-- OVERLAY PAGES -->
+  <div class="overlay-page form-overlay" id="depositOverlayPage">
+    <div class="overlay-container deposit-container">
+      <div class="overlay-back-button" onclick="closeOverlay('deposit')">←</div>
+      <h2>Deposit via UPI</h2>
+      <div class="download-text">⬇️ Click QR to Download</div>
+      <a id="qrDownload" href="https://ik.imagekit.io/9jxdbc3z2/IMG_20250713_232502.png?updatedAt=1752429661731" download="upi_qr.png">
+        <img src="https://ik.imagekit.io/9jxdbc3z2/IMG_20250713_232502.png?updatedAt=1752429661731" alt="QR" class="qr-img"/>
+      </a>
+      <div class="upi">9516103483@cnrb</div>
+      <div class="name">AYUSH RAJPUT</div>
+      <button class="copy-btn" onclick="copyUPI()">Copy UPI ID</button>
+      <br>
+      <input type="number" id="depositAmount" placeholder="Enter Amount" />
+      <input type="text" id="depositUtr" placeholder="Enter UTR/Reference No." />
+      <br>
+      <button class="submit-btn" onclick="submitDeposit()">Submit</button>
+    </div>
+  </div>
+
+  <div class="overlay-page form-overlay" id="withdrawOverlayPage">
+    <div class="overlay-container withdraw-container">
+      <div class="overlay-back-button" onclick="closeOverlay('withdraw')">←</div>
+      <h2>Withdraw via UPI</h2>
+      <div class="field-label">Full Name</div>
+      <input type="text" id="withdrawName" placeholder="Enter Your Name" />
+      <div class="field-label">Mobile Number</div>
+      <input type="tel" id="withdrawMobile" placeholder="Enter Mobile Number" maxlength="10" />
+      <div class="field-label">UPI ID</div>
+      <input type="text" id="withdrawUpi" placeholder="Enter your UPI ID" />
+      <div class="field-label">Amount (Min ₹20)</div>
+      <input type="number" id="withdrawAmount" placeholder="Enter Amount" />
+      <button class="submit-btn" onclick="submitWithdrawal()">Submit</button>
+    </div>
+  </div>
+
+  <div class="overlay-page history-overlay" id="depositHistoryOverlayPage">
+    <div class="overlay-container">
+      <div class="overlay-back-button" onclick="closeOverlay('depositHistory')">←</div>
+      <h2>📜 All Deposit History</h2>
+      <div class="total-box" id="totalDepositAmountBox">Total Deposit: ₹0</div>
+      <div class="history-list" id="depositHistoryContainer"></div>
+    </div>
+  </div>
+
+  <div class="overlay-page history-overlay" id="withdrawalHistoryOverlayPage">
+    <div class="overlay-container">
+      <div class="overlay-back-button" onclick="closeOverlay('withdrawalHistory')">←</div>
+      <h2>💸 Withdrawal History</h2>
+      <div class="total-box" id="totalWithdrawalAmountBox">Total Withdrawal: ₹0</div>
+      <div class="history-list" id="withdrawalHistoryContainer"></div>
+    </div>
+  </div>
+
+  <div class="overlay-page support-overlay" id="customerSupportOverlayPage">
+    <div class="overlay-container">
+      <div class="overlay-back-button" onclick="closeOverlay('customerSupport')">←</div>
+      <h2>🛠️ Customer Support</h2>
+      <div class="info">
+        <label for="uid">Game ID (UID)</label>
+        <input type="text" id="uid" placeholder="Enter your Game UID" />
+      </div>
+      <div class="info">
+        <label for="name">Your Name</label>
+        <input type="text" id="name" placeholder="Enter your name" />
+      </div>
+      <div class="info">
+        <label for="mobile">Mobile Number</label>
+        <input type="tel" id="mobile" placeholder="Enter your mobile number" />
+      </div>
+      <div class="info">
+        <label for="message">Your Message</label>
+        <textarea id="message" rows="4" placeholder="Write your issue or query..."></textarea>
+      </div>
+      <button class="submit-btn" onclick="submitSupport()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- START OF SCRIPT ---
+
+// IMPORTANT: REPLACE WITH YOUR FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyBodG2qnvLOWv09Gz-ffeiZV3CqST536EE",
+  authDomain: "guru-win-bf5a5.firebaseapp.com",
+  databaseURL: "https://guru-win-bf5a5-default-rtdb.firebaseio.com",
+  projectId: "guru-win-bf5a5",
+  storageBucket: "guru-win-bf5a5.firebasestorage.app",
+  messagingSenderId: "596765704452",
+  appId: "1:596765704452:web:d6d247455f8fd07cf31051",
+  measurementId: "G-044DCCXF1Q"
+};
+
+// --- Initialize Firebase ---
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+// --- AUTHENTICATION LOGIC ---
+  let isSignUp = true;
+
+  function toggleForm() {
+    isSignUp = !isSignUp;
+    document.getElementById('formTitle').textContent = isSignUp ? 'Sign Up' : 'Login';
+    document.getElementById('signUpForm').style.display = isSignUp ? 'block' : 'none';
+    document.getElementById('loginForm').style.display = isSignUp ? 'none' : 'block';
+    const toggle = document.getElementById('toggleLink');
+    toggle.innerHTML = isSignUp
+      ? `Already have an account? <a href="#" onclick="toggleForm()">Login</a>`
+      : `Don't have an account? <a href="#" onclick="toggleForm()">Sign Up</a>`;
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('registerError').textContent = '';
+  }
+
+  function handleLogin() {
+    const mobile = document.getElementById('loginMobile').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    const errorEl = document.getElementById('loginError');
+    errorEl.textContent = ''; 
+
+    if (!mobile || !password) {
+      errorEl.textContent = 'Please fill all fields';
+      return;
+    }
+    if (mobile.length !== 10 || isNaN(mobile)) {
+        errorEl.textContent = 'Please enter a valid 10-digit mobile number.';
+        return;
+    }
+
+    const email = `${mobile}@guruwin.com`;
+    showLoading();
+    auth.signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        // Login handled by onAuthStateChanged listener
+      })
+      .catch((error) => {
+        hideLoading();
+        errorEl.textContent = error.message;
+      });
+  }
+
+  function handleRegister() {
+    const mobile = document.getElementById('regMobile').value.trim();
+    const password = document.getElementById('regPassword').value.trim();
+    const confirm = document.getElementById('regConfirm').value.trim();
+    const refer = document.getElementById('regRefer').value.trim();
+    const errorEl = document.getElementById('registerError');
+    errorEl.textContent = ''; 
+
+    if (!mobile || !password || !confirm) {
+      errorEl.textContent = 'All fields except Refer Code are required';
+      return;
+    }
+    if (mobile.length !== 10 || isNaN(mobile)) {
+        errorEl.textContent = 'Please enter a valid 10-digit mobile number.';
+        return;
+    }
+    if (password.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters long.';
+        return;
+    }
+    if (password !== confirm) {
+      errorEl.textContent = 'Passwords do not match';
+      return;
+    }
+
+    const email = `${mobile}@guruwin.com`;
+    showLoading();
+    auth.createUserWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        const uid = user.uid;
+        const initialUserData = {
+            profile: {
+                uid: uid,
+                mobile: mobile,
+                username: 'user' + mobile.slice(-6),
+                initials: 'GU',
+                referralCode: 'G' + mobile.slice(-4) + Math.floor(Math.random() * 1000),
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            },
+            wallet: {
+                balance: 20.00 // Sign-up bonus
+            },
+            stats: {
+                lastLogin: firebase.database.ServerValue.TIMESTAMP,
+                lastBonusClaim: ''
+            }
+        };
+        db.ref('users/' + uid).set(initialUserData);
+        // Register handled by onAuthStateChanged listener
+      })
+      .catch((error) => {
+        hideLoading();
+        errorEl.textContent = error.message;
+      });
+  }
+
+// --- APP INITIALIZATION AND STATE MANAGEMENT ---
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showApp() {
+    document.getElementById('auth-wrapper').style.display = 'none';
+    document.getElementById('app-wrapper').style.display = 'flex';
+}
+
+function showAuth() {
+    document.getElementById('app-wrapper').style.display = 'none';
+    document.getElementById('auth-wrapper').style.display = 'flex';
+}
+
+function logout() {
+    auth.signOut();
+}
+
+// --- Listen for auth state changes ---
+auth.onAuthStateChanged(user => {
+    if (user) {
+        showLoading();
+        initializeApp(user);
+        showApp();
+        setTimeout(hideLoading, 1000);
+    } else {
+        // User is signed out
+        showAuth();
+        // Detach any listeners if they exist
+        db.ref('users/' + currentUid).off();
+        db.ref('lottery').off();
+    }
+});
+
+let currentUid = null;
+let currentUserData = {};
+
+function initializeApp(user) {
+    currentUid = user.uid;
+
+    // --- Attach listeners to user data and game state ---
+    const userRef = db.ref('users/' + currentUid);
+    userRef.on('value', (snapshot) => {
+        currentUserData = snapshot.val();
+        if (currentUserData) {
+            updateAllUI(currentUserData);
+        }
+    });
+
+    db.ref('lottery/currentState').on('value', (snapshot) => {
+        const state = snapshot.val();
+        if (state) {
+            updateLotteryState(state);
+        }
+    });
+    
+    db.ref('lottery/results').orderByKey().limitToLast(10).on('value', snapshot => {
+        const records = [];
+        snapshot.forEach(child => {
+            records.unshift({ period: child.key, ...child.val() });
+        });
+        updateLotteryGameTable(records);
+    });
+
+    db.ref(`users/${currentUid}/lotteryBets`).orderByKey().limitToLast(20).on('value', snapshot => {
+        const myBets = [];
+        snapshot.forEach(child => {
+            myBets.unshift({ period: child.key, ...child.val() });
+        });
+        updateLotteryMyBetTable(myBets);
+    });
+
+
+    // Initial setup
+    switchTab('profile');
+    
+    // TEMPORARY: This function should be run by a secure server, not the client.
+    // It initializes the game if it hasn't been started yet.
+    initializeLotteryOnServer();
+}
+
+function updateAllUI(data) {
+    // Wallets
+    const balance = data.wallet?.balance || 0;
+    document.getElementById("profileWalletBalance").textContent = balance.toFixed(2);
+    document.getElementById("lotteryBalance").textContent = balance.toFixed(2);
+    document.getElementById("minesWallet").textContent = balance.toFixed(2);
+
+    // Profile
+    document.querySelector('.profile-icon').textContent = data.profile?.initials || 'GU';
+    document.querySelector('.profile-name').textContent = data.profile?.username || 'user';
+    document.querySelector('.profile-uid').textContent = 'UID: ' + data.profile?.uid || '';
+    document.getElementById('profileMobile').textContent = '+91 ' + data.profile?.mobile || '';
+    document.getElementById('referLink').textContent = `https://guruwin.com/ref/${data.profile?.referralCode || ''}`;
+    
+    const lastLoginDate = data.stats?.lastLogin ? new Date(data.stats.lastLogin) : new Date();
+    document.getElementById('lastLogin').textContent = `${lastLoginDate.toLocaleDateString()} ${lastLoginDate.toLocaleTimeString()}`;
+    db.ref(`users/${currentUid}/stats/lastLogin`).set(firebase.database.ServerValue.TIMESTAMP);
+}
+
+// --- MAIN APP LOGIC ---
+    const mainPopup = document.getElementById("mainPopup");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const depositOverlayPage = document.getElementById("depositOverlayPage");
+    const withdrawOverlayPage = document.getElementById("withdrawOverlayPage");
+    const depositHistoryOverlayPage = document.getElementById("depositHistoryOverlayPage");
+    const withdrawalHistoryOverlayPage = document.getElementById("withdrawalHistoryOverlayPage");
+    const customerSupportOverlayPage = document.getElementById("customerSupportOverlayPage");
+
+    // --- Sound Elements ---
+    const clickSound = document.getElementById('clickSound');
+    const tickSound = document.getElementById('tickSound');
+    const gemSound = document.getElementById('gemSound');
+    const bombSound = document.getElementById('bombSound');
+    const winSound = document.getElementById('winSound');
+
+
+    let currentActiveTabId = 'profile';
+
+    function playSound(soundElement) {
+        if (soundElement) {
+            soundElement.currentTime = 0;
+            soundElement.play();
+        }
+    }
+
+    function showPopup(message, type = 'success') {
+      mainPopup.className = 'popup';
+      mainPopup.classList.add(type);
+      document.getElementById("mainPopup-title").innerText = type === "success" ? "✅ Success" : "❌ Error";
+      document.getElementById("mainPopup-msg").innerText = message;
+      mainPopup.style.display = "block";
+      setTimeout(() => { mainPopup.style.display = "none"; }, 3000);
+    }
+
+    function claimBonus() {
+      playSound(clickSound);
+      const today = new Date().toISOString().split('T')[0];
+      const lastClaimDate = currentUserData.stats?.lastBonusClaim;
+
+      if (lastClaimDate === today) {
+        showPopup("You have already claimed your daily bonus. Come back tomorrow!", "error");
+        return;
+      }
+      const reward = Math.floor(Math.random() * 20) + 1;
+      
+      const userWalletRef = db.ref(`users/${currentUid}/wallet/balance`);
+      userWalletRef.transaction((currentBalance) => {
+          return (currentBalance || 0) + reward;
+      }).then(() => {
+          db.ref(`users/${currentUid}/stats/lastBonusClaim`).set(today);
+          showPopup(`You won ₹${reward}`, "success");
+      });
+    }
+
+    function switchTab(id) {
+      playSound(clickSound);
+      hideAllOverlays();
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('.bottom-nav div').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`.bottom-nav div[onclick="switchTab('${id}')"]`).classList.add('active');
+      currentActiveTabId = id;
+      if (id === 'promotion') { renderInvites(); }
+    }
+
+    function hideAllOverlays() {
+      depositOverlayPage.style.display = 'none';
+      withdrawOverlayPage.style.display = 'none';
+      depositHistoryOverlayPage.style.display = 'none';
+      withdrawalHistoryOverlayPage.style.display = 'none';
+      customerSupportOverlayPage.style.display = 'none';
+    }
+
+    function showOverlayWithLoading(overlayType) {
+      playSound(clickSound);
+      const mainAppContent = document.getElementById(currentActiveTabId);
+      mainAppContent.style.visibility = 'hidden';
+      loadingOverlay.style.display = 'flex';
+      setTimeout(() => {
+        loadingOverlay.style.display = 'none';
+        hideAllOverlays(); 
+        if (overlayType === 'deposit') { depositOverlayPage.style.display = 'flex'; }
+        else if (overlayType === 'withdraw') { withdrawOverlayPage.style.display = 'flex'; }
+        else if (overlayType === 'depositHistory') { depositHistoryOverlayPage.style.display = 'flex'; renderDepositHistory(); }
+        else if (overlayType === 'withdrawalHistory') { withdrawalHistoryOverlayPage.style.display = 'flex'; renderWithdrawalHistory(); }
+      }, 1000);
+    }
+
+    function showOverlay(overlayType) {
+        playSound(clickSound);
+        hideAllOverlays();
+        document.getElementById(currentActiveTabId).style.visibility = 'hidden';
+        if (overlayType === 'customerSupport') { customerSupportOverlayPage.style.display = 'flex'; }
+    }
+
+    function closeOverlay(overlayType) {
+      playSound(clickSound);
+      // Logic to clear fields and hide overlays
+      document.getElementById(`${overlayType}OverlayPage`).style.display = 'none';
+      document.getElementById(currentActiveTabId).style.visibility = 'visible';
+    }
+
+    function copyUPI() {
+      playSound(clickSound);
+      navigator.clipboard.writeText("9516103483@cnrb");
+      showPopup("UPI ID Copied!", "success");
+    }
+
+    function submitDeposit() {
+      playSound(clickSound);
+      const amount = parseFloat(document.getElementById("depositAmount").value.trim());
+      const utr = document.getElementById("depositUtr").value.trim();
+      if (isNaN(amount) || amount < 20) { showPopup("Minimum deposit is ₹20.", "error"); return; }
+      if (!utr) { showPopup("Please enter your UTR/Reference No.", "error"); return; }
+
+      const depositRef = db.ref(`users/${currentUid}/deposits`).push();
+      const depositData = {
+          amount: amount,
+          utr: utr,
+          date: firebase.database.ServerValue.TIMESTAMP,
+          status: "Pending" // In a real app, a server would verify this
+      };
+      depositRef.set(depositData).then(() => {
+          showPopup("Deposit request submitted. It will be reviewed.", "success");
+          // NOTE: Balance should only be updated by a secure server after verification.
+          // For demo purposes, we will add it here.
+          db.ref(`users/${currentUid}/wallet/balance`).transaction(bal => (bal||0)+amount);
+          closeOverlay('deposit');
+      });
+    }
+
+    function submitWithdrawal() {
+      playSound(clickSound);
+      const name = document.getElementById("withdrawName").value.trim();
+      const mobile = document.getElementById("withdrawMobile").value.trim();
+      const upi = document.getElementById("withdrawUpi").value.trim();
+      const amount = parseFloat(document.getElementById("withdrawAmount").value.trim());
+      const currentBalance = currentUserData.wallet?.balance || 0;
+
+      if (!name || !mobile || !upi || isNaN(amount) || amount < 20) { showPopup("Please fill all fields. Min withdrawal is ₹20.", "error"); return; }
+      if (amount > currentBalance) { showPopup("Insufficient balance.", "error"); return; }
+      
+      const withdrawalRef = db.ref(`users/${currentUid}/withdrawals`).push();
+      const withdrawalData = { amount, upi, name, mobile, date: firebase.database.ServerValue.TIMESTAMP, status: "Pending" };
+      
+      db.ref(`users/${currentUid}/wallet/balance`).transaction(bal => {
+          if (bal >= amount) {
+              return bal - amount;
+          }
+          return; // Abort transaction
+      }).then((result) => {
+          if (result.committed) {
+              withdrawalRef.set(withdrawalData);
+              showPopup("Withdrawal Request Submitted!", "success");
+              closeOverlay('withdraw');
+          } else {
+              showPopup("Withdrawal failed. Insufficient balance.", "error");
+          }
+      });
+    }
+
+    function renderHistory(type) {
+        const containerId = `${type}HistoryContainer`;
+        const totalBoxId = `total${type.charAt(0).toUpperCase() + type.slice(1)}AmountBox`;
+        const container = document.getElementById(containerId);
+        const totalBox = document.getElementById(totalBoxId);
+
+        db.ref(`users/${currentUid}/${type}s`).orderByChild('date').once('value', snapshot => {
+            if (!snapshot.exists()) {
+                container.innerHTML = `<div class="no-history">No ${type} history.</div>`;
+                totalBox.textContent = `Total ${type}: ₹0`;
+                return;
+            }
+            const data = [];
+            snapshot.forEach(child => { data.unshift(child.val()); });
+            
+            const total = data.reduce((sum, item) => sum + parseFloat(item.amount), 0);
+            totalBox.textContent = `Total ${type}: ₹${total.toFixed(2)}`;
+
+            container.innerHTML = data.map(entry => {
+                const date = new Date(entry.date).toLocaleString();
+                const statusClass = (entry.status || '').toLowerCase();
+                const detailLabel = type === 'deposit' ? 'UTR' : 'UPI';
+                const detailValue = type === 'deposit' ? entry.utr : entry.upi;
+
+                return `<div class="history-card">
+                    <div class="info-row"><span class="label">Amount</span><span class="amount-box">₹${entry.amount.toFixed(2)}</span></div>
+                    <div class="info-row"><span class="label">${detailLabel}</span><span class="value">${detailValue}</span></div>
+                    <div class="info-row"><span class="label">Date</span><span class="value">${date}</span></div>
+                    <div class="info-row"><span class="label">Status</span><span class="status ${statusClass}">${entry.status}</span></div>
+                </div>`;
+            }).join('');
+        });
+    }
+    const renderDepositHistory = () => renderHistory('deposit');
+    const renderWithdrawalHistory = () => renderHistory('withdrawal');
+
+
+    function submitSupport() {
+      // This would submit to a support ticket system in the database
+      showPopup("Request sent. We’ll get back to you shortly!", "success");
+      setTimeout(() => { closeOverlay('customerSupport'); }, 1500);
+    }
+    // --- LOTTERY GAME Logic ---
+    let lotteryTime = 30;
+    let lotteryPeriod = 0;
+    let lotteryEndTime = 0;
+    let currentLotteryBet = null;
+    let lotteryInterval = null;
+
+    const lotteryRecordBody = document.getElementById("record-body");
+    const lotteryMyBetBody = document.getElementById("mybet-body");
+    const lotteryTimeEl = document.getElementById("time");
+    const lotteryPeriodEl = document.getElementById("period");
+    const lotteryLastResultBall = document.getElementById("last-result-ball");
+    const lotteryBetPopup = document.getElementById("lottery-bet-popup");
+    const lotteryBetAmountInput = document.getElementById("lottery-bet-amount");
+    const lotterySuccessMsg = document.getElementById("lottery-success-msg");
+    const lotteryCountdownOverlay = document.getElementById('lottery-countdown-overlay');
+    const lotteryWinPopup = document.getElementById('lottery-win-popup');
+    const lotteryLossPopup = document.getElementById('lottery-loss-popup');
+
+    function getLotteryColor(num) { return [0,2,4].includes(num) ? "Red" : "Green"; }
+    function getLotterySize(num) { return [0,1,2].includes(num) ? "Small" : "Big"; }
+    function updateLotteryLastBall(num) { 
+        if(num === '?') {
+            lotteryLastResultBall.textContent = '?';
+            lotteryLastResultBall.className = 'result-ball';
+            return;
+        }
+        lotteryLastResultBall.textContent = num; 
+        const colorClass = getLotteryColor(num).toLowerCase(); 
+        lotteryLastResultBall.className = 'result-ball ' + colorClass; 
+    }
+
+    function updateLotteryGameTable(records) {
+        lotteryRecordBody.innerHTML = records.map(r => `<tr><td>${r.period}</td><td class="${r.color.toLowerCase()}">${r.number}</td><td>${r.size}</td><td class="${r.color.toLowerCase()}">${r.color}</td></tr>`).join("");
+    }
+    function updateLotteryMyBetTable(myBets) {
+        lotteryMyBetBody.innerHTML = myBets.map(b => {
+            let resultText = b.result || 'Pending';
+            if(b.result === 'Win') resultText += ` (+₹${b.winnings.toFixed(2)})`;
+            if(b.result === 'Lose') resultText += ` (-₹${b.amount.toFixed(2)})`;
+            return `<tr><td>${b.period}</td><td>${b.betOn}</td><td>₹${b.amount.toFixed(2)}</td><td style="color:${b.result==='Win'?'green':(b.result==='Lose'?'red':'black')}">${resultText}</td></tr>`
+        }).join("");
+    }
+    
+    // --- Centralized function to handle the timer based on server time ---
+    function updateLotteryState(state) {
+        lotteryPeriod = state.period;
+        lotteryEndTime = state.endTime;
+        lotteryPeriodEl.textContent = lotteryPeriod;
+        updateLotteryLastBall(state.lastResult?.number ?? '?');
+        
+        if(lotteryInterval) clearInterval(lotteryInterval);
+
+        lotteryInterval = setInterval(() => {
+            const now = Date.now();
+            const timeLeft = Math.round((lotteryEndTime - now) / 1000);
+            
+            lotteryTimeEl.textContent = timeLeft > 0 ? timeLeft : 0;
+            
+            if (timeLeft <= 5 && timeLeft > 0) {
+                playSound(tickSound);
+                lotteryCountdownOverlay.textContent = `0${timeLeft}`;
+                lotteryCountdownOverlay.style.display = 'flex';
+            } else {
+                lotteryCountdownOverlay.style.display = 'none';
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(lotteryInterval);
+                // The server (simulated) is responsible for updating the state
+                // We'll trigger a check here
+                processLotteryEnd();
+            }
+        }, 1000);
+    }
+    
+    // --- THIS FUNCTION SIMULATES A SECURE SERVER PROCESS ---
+    // It should be a Cloud Function triggered on a schedule.
+    function initializeLotteryOnServer() {
+        const lotteryStateRef = db.ref('lottery/currentState');
+        lotteryStateRef.once('value', snapshot => {
+            if (!snapshot.exists()) {
+                lotteryStateRef.set({
+                    period: new Date().toISOString().slice(0,10).replace(/-/g,'') + '0001',
+                    endTime: Date.now() + 30000
+                });
+            }
+        });
+    }
+
+    // --- THIS FUNCTION SIMULATES A SECURE SERVER PROCESS for ending a round ---
+    // It should be a Cloud Function. Here we use a transaction to prevent multiple clients from running it.
+    function processLotteryEnd() {
+        const stateRef = db.ref('lottery/currentState');
+        stateRef.transaction(currentState => {
+            if (currentState && currentState.endTime <= Date.now()) {
+                const resultNum = Math.floor(Math.random()*6);
+                currentState.lastResult = {
+                    number: resultNum,
+                    color: getLotteryColor(resultNum),
+                    size: getLotterySize(resultNum)
+                };
+                
+                // Save result
+                db.ref(`lottery/results/${currentState.period}`).set(currentState.lastResult);
+
+                // Process bets for this period
+                processBets(currentState.period, currentState.lastResult);
+                
+                // Start next period
+                currentState.period = String(Number(currentState.period) + 1);
+                currentState.endTime = Date.now() + 30000;
+                return currentState;
+            }
+            return; // Abort transaction if another client is processing or time is not up
+        });
+    }
+
+    async function processBets(period, result) {
+        const betsRef = db.ref(`lottery/bets/${period}`);
+        const snapshot = await betsRef.once('value');
+        if (!snapshot.exists()) return;
+
+        snapshot.forEach(userBetSnapshot => {
+            const uid = userBetSnapshot.key;
+            const bet = userBetSnapshot.val();
+            let mult = 0;
+            if(bet.betOn === result.number.toString()) mult = 4;
+            else if((bet.betOn==='Big' && result.size==='Big') || (bet.betOn==='Small' && result.size==='Small') || (bet.betOn==='Red' && result.color==='Red') || (bet.betOn==='Green' && result.color==='Green')) mult = 1.9;
+
+            let betResult, winnings = 0;
+            if(mult > 0) {
+                winnings = bet.amount * mult;
+                betResult = 'Win';
+                db.ref(`users/${uid}/wallet/balance`).transaction(bal => (bal||0) + winnings);
+                if(uid === currentUid) showLotteryWinPopup(result, winnings, period);
+            } else {
+                betResult = 'Lose';
+                if(uid === currentUid) showLotteryLossPopup(result, period);
+            }
+            db.ref(`users/${uid}/lotteryBets/${period}`).update({ result: betResult, winnings: winnings });
+        });
+    }
+
+    function showLotteryWinPopup(result, winnings, period) { playSound(winSound); document.getElementById('win-popup-color').textContent = result.color; document.getElementById('win-popup-color').className = `result-tag color ${result.color.toLowerCase()}`; document.getElementById('win-popup-number').textContent = result.number; document.getElementById('win-popup-size').textContent = result.size; document.getElementById('win-popup-amount').textContent = `₹${winnings.toFixed(2)}`; document.getElementById('win-popup-period').textContent = `Period: ${period}`; lotteryWinPopup.style.display = 'block'; setTimeout(() => { lotteryWinPopup.style.display = 'none'; }, 3000); }
+    function showLotteryLossPopup(result, period) { playSound(bombSound); document.getElementById('loss-popup-color').textContent = result.color; document.getElementById('loss-popup-color').className = `result-tag color ${result.color.toLowerCase()}`; document.getElementById('loss-popup-number').textContent = result.number; document.getElementById('loss-popup-size').textContent = result.size; document.getElementById('loss-popup-period').textContent = `Issue: ${period}`; lotteryLossPopup.style.display = 'block'; setTimeout(() => { lotteryLossPopup.style.display = 'none'; }, 3000); }
+
+
+    function placeLotteryBet(type) { 
+        playSound(clickSound); 
+        const timeLeft = Math.round((lotteryEndTime - Date.now()) / 1000);
+        if (timeLeft <= 5) { showPopup("Betting is closed for this round.", "error"); return; } 
+        currentLotteryBet = { type }; 
+        lotteryBetAmountInput.value = '';
+        document.getElementById('lottery-bet-popup-title').textContent = `Bet on ${type}`;
+        lotteryBetPopup.style.display = 'block'; 
+    }
+    
+    function confirmLotteryBet() {
+        playSound(clickSound);
+        const amount = parseFloat(lotteryBetAmountInput.value);
+        const currentBalance = currentUserData.wallet?.balance || 0;
+
+        if(isNaN(amount) || amount <= 0 || amount > currentBalance) { 
+            showPopup("Invalid amount or insufficient balance.", "error"); 
+            return; 
+        }
+
+        const userWalletRef = db.ref(`users/${currentUid}/wallet/balance`);
+        userWalletRef.transaction(bal => {
+            if (bal >= amount) {
+                return bal - amount;
+            }
+            return; // Abort
+        }).then(result => {
+            if (result.committed) {
+                const betData = {
+                    betOn: currentLotteryBet.type,
+                    amount: amount,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
+                // Place bet for the specific period
+                db.ref(`lottery/bets/${lotteryPeriod}/${currentUid}`).set(betData);
+                db.ref(`users/${currentUid}/lotteryBets/${lotteryPeriod}`).set(betData);
+
+                lotteryBetPopup.style.display = 'none'; 
+                lotterySuccessMsg.style.display = 'block'; 
+                setTimeout(()=>lotterySuccessMsg.style.display = 'none',2000); 
+            } else {
+                showPopup("Bet failed. Insufficient balance.", "error");
+            }
+        });
+    }
+
+    function cancelLotteryBet() { playSound(clickSound); currentLotteryBet = null; lotteryBetPopup.style.display = 'none'; }
+    function switchLotteryTab(tab) { playSound(clickSound); document.getElementById("game-record-table").style.display = tab==='game'?'table':'none'; document.getElementById("mybet-table").style.display = tab==='mybet'?'table':'none'; document.getElementById("tab-game").className = tab==='game'?'tab-btn active-tab':'tab-btn inactive-tab'; document.getElementById("tab-mybet").className = tab==='mybet'?'tab-btn active-tab':'tab-btn inactive-tab'; document.getElementById("game-pagination").style.display = tab==='game'?'flex':'none'; document.getElementById("mybet-pagination").style.display = tab==='mybet'?'flex':'none'; }
+    function nextLotteryPage(tab){} // Pagination needs full implementation
+    function prevLotteryPage(tab){} // Pagination needs full implementation
+    
+    // --- MINES GAME Logic (remains mostly client-side for now, but integrated with Firebase wallet) ---
+    const minesGrid = document.getElementById('minesGrid');
+    const minesBetInput = document.getElementById('minesBetAmount');
+    const minesMineCountInput = document.getElementById('mineCount');
+    const minesProfitEl = document.getElementById('nextProfit');
+    const minesMultiplierEl = document.getElementById('xMultiplier');
+    const minesWinPopup = document.getElementById('mines-win-popup');
+    const minesErrorPopup = document.getElementById('mines-error-popup');
+    const minesLossPopup = document.getElementById('mines-loss-popup');
+    const minesWinAmountEl = document.getElementById('mines-win-amount');
+    const minesActionBtn = document.getElementById('mines_action_btn');
+    let isMinesPlaying = false;
+    let minesMinePositions = [];
+    let minesSelectedTiles = [];
+    let minesGemsFound = 0;
+    let minesCurrentMultiplier = 1;
+    let minesBetAmount = 0;
+    function minesFactorial(n) { return n <= 1 ? 1 : n * minesFactorial(n - 1); }
+    function minesCombinations(n, k) { if (k < 0 || k > n) return 0; return minesFactorial(n) / (minesFactorial(k) * minesFactorial(n - k)); }
+    function minesCalculateMultiplier(mines, gems) { const total = 25; const safe = total - mines; if (gems === 0) return 1.00; if (gems > safe) return 0; const winChances = minesCombinations(safe, gems) / minesCombinations(total, gems); if (winChances === 0) return 0; return (1 / winChances * 0.97).toFixed(2); }
+    function minesGenerateMines(count) { const positions = new Set(); while (positions.size < count) { positions.add(Math.floor(Math.random() * 25)); } return Array.from(positions); }
+    function minesCreateGrid() { minesGrid.innerHTML = ''; minesGrid.classList.add('show'); for (let i = 0; i < 25; i++) { const tile = document.createElement('div'); tile.className = 'mine-tile'; tile.dataset.index = i; tile.addEventListener('click', (event) => { if (!isMinesPlaying || event.target.classList.contains('revealed')) return; minesRevealTile(tile, i); }); minesGrid.appendChild(tile); } }
+    function minesShowLossPopup() { minesLossPopup.style.display = 'block'; setTimeout(() => { minesLossPopup.style.display = 'none'; minesGrid.classList.remove('show'); }, 3000); }
+    function minesRevealTile(tile, index) {
+      if (minesSelectedTiles.includes(index) || tile.classList.contains('revealed')) return;
+      tile.classList.add('revealed');
+      minesSelectedTiles.push(index);
+      if (minesMinePositions.includes(index)) {
+        playSound(bombSound);
+        tile.classList.add('bomb');
+        isMinesPlaying = false;
+        minesActionBtn.textContent = '💥 You Lost';
+        minesMinePositions.forEach(pos => { if (!minesSelectedTiles.includes(pos)) { const bombTile = minesGrid.children[pos]; bombTile.classList.add('bomb', 'revealed'); } });
+        minesShowLossPopup();
+      } else {
+        playSound(gemSound);
+        tile.classList.add('gem');
+        minesGemsFound++;
+        minesCurrentMultiplier = minesCalculateMultiplier(parseInt(minesMineCountInput.value), minesGemsFound);
+        const profit = (minesBetAmount * minesCurrentMultiplier).toFixed(2);
+        minesMultiplierEl.textContent = `${minesCurrentMultiplier}x`;
+        minesProfitEl.textContent = `₹${profit}`;
+      }
+    }
+    minesActionBtn.onclick = () => {
+      playSound(clickSound);
+      const userWalletRef = db.ref(`users/${currentUid}/wallet/balance`);
+      if (!isMinesPlaying) {
+        minesBetAmount = parseFloat(minesBetInput.value);
+        userWalletRef.transaction(bal => {
+            if (bal >= minesBetAmount) {
+                return bal - minesBetAmount;
+            }
+            return; // Abort
+        }).then(result => {
+            if (result.committed) {
+                minesMinePositions = minesGenerateMines(parseInt(minesMineCountInput.value));
+                minesSelectedTiles = [];
+                minesGemsFound = 0;
+                minesCurrentMultiplier = 1;
+                minesMultiplierEl.textContent = '1.00x';
+                minesProfitEl.textContent = `₹${minesBetAmount.toFixed(2)}`;
+                minesCreateGrid();
+                isMinesPlaying = true;
+                minesActionBtn.textContent = '💸 Cash Out';
+            } else {
+                minesErrorPopup.style.display = 'block';
+            }
+        });
+      } else {
+        const profit = parseFloat((minesBetAmount * minesCurrentMultiplier).toFixed(2));
+        userWalletRef.transaction(bal => (bal||0) + profit).then(() => {
+            playSound(winSound);
+            minesWinAmountEl.textContent = `₹${profit.toFixed(2)}`;
+            minesWinPopup.style.display = 'block';
+            isMinesPlaying = false;
+            minesActionBtn.textContent = 'Start Game';
+            minesMinePositions.forEach(pos => { if (!minesSelectedTiles.includes(pos)) { const bombTile = minesGrid.children[pos]; bombTile.classList.add('bomb', 'revealed'); } });
+        });
+      }
+    };
+
+    // --- Promotion Tab Logic ---
+    function copyLink() { playSound(clickSound); const link = document.getElementById('referLink').innerText; navigator.clipboard.writeText(link); showPopup("Referral link copied!"); }
+    function shareLink() { playSound(clickSound); const link = document.getElementById('referLink').innerText; if (navigator.share) { navigator.share({ title: 'Join GURU WIN', text: 'Earn by playing games!', url: link }).catch(console.error); } else { alert("Sharing not supported."); } }
+    
+    function renderInvites() {
+        // This needs a full backend implementation to track referrals
+        const tbody = document.getElementById("inviteBody");
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4">Referral system coming soon!</td></tr>';
+    }
+    function nextPage() { playSound(clickSound); }
+    function prevPage() { playSound(clickSound); }
+
+</script>
+</body>
+</html>
